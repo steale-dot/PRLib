@@ -102,13 +102,6 @@ void div_circle_initialize()
     map_centroid.~Point_();
 }
 
-/*kuwaharaFilter::kuwaharaFilter()
-{
-    //map_circle_width = (int) (2 * ceil(2 * SIGMA_R) + 1);
-    //local_circle_width = (int) (2 * ceil(2 * SIGMA_R) + 1);
-
-    div_circle_initialize();
-}*/
 
 void prl::denoiseKuwahara(const cv::Mat& inputImage, cv::Mat& outputImage, size_t iterations)
 {
