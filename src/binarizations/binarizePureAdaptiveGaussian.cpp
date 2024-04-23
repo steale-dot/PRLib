@@ -30,12 +30,11 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 void prl::binarizePureAdaptiveGaussian(const cv::Mat& inputImage, cv::Mat& outputImage,
-                                       const double maxValue, const int blockSize, const int shift)
+    const double maxValue, const int blockSize, const int shift)
 {
     cv::Mat inputImageMat = inputImage;
 
-    if (inputImageMat.empty())
-    {
+    if (inputImageMat.empty()) {
         throw std::invalid_argument("Input image for binarization is empty");
     }
 
@@ -49,8 +48,7 @@ void prl::binarizePureAdaptiveGaussian(const cv::Mat& inputImage, cv::Mat& outpu
 
     cv::Mat outputImageMat;
 
-    if (inputImageMat.channels() != 1)
-    {
+    if (inputImageMat.channels() != 1) {
         cv::cvtColor(inputImageMat, outputImageMat, cv::COLOR_BGR2GRAY);
     }
     /*else
@@ -66,10 +64,10 @@ void prl::binarizePureAdaptiveGaussian(const cv::Mat& inputImage, cv::Mat& outpu
     }*/
 
     cv::adaptiveThreshold(
-            outputImageMat, outputImageMat,
-            maxValue,
-            cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY,
-            blockSize, shift);
+        outputImageMat, outputImageMat,
+        maxValue,
+        cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY,
+        blockSize, shift);
 
     outputImage = outputImageMat;
 }

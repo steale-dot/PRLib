@@ -28,12 +28,11 @@
 #include <stdexcept>
 #include <vector>
 
+#include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/features2d/features2d.hpp>
 
 #include "imageLibCommon.h"
-
 
 /*switch (key) {
 case CLAHE_CLIP_LIMIT:
@@ -71,36 +70,31 @@ return 0.0;
 }*/
 
 void prl::binarizeFBCITB(
-        cv::Mat& inputImage, cv::Mat& outputImage,
-        bool useCanny, bool useVariancesMap,
-        bool useCLAHE, bool useBilateral,
-        bool useOtherColorspace,
-        bool useMorphology,
-        bool useCannyOnVariances,
-        double varianceMapThreshold,
-        double CLAHEClipLimit,
-        double gaussianBlurKernelSize,
-        double cannyUpperThresholdCoeff,
-        double cannyLowerThresholdCoeff,
-        double boundingRectangleMaxArea,
-        int bilateralKernelSize,
-        double bilateralKernelIntensitySigma,
-        double bilateralKernelSpatialSigma,
-        double boundingRectMaxAreaCoeff)
+    cv::Mat& inputImage, cv::Mat& outputImage,
+    bool useCanny, bool useVariancesMap,
+    bool useCLAHE, bool useBilateral,
+    bool useOtherColorspace,
+    bool useMorphology,
+    bool useCannyOnVariances,
+    double varianceMapThreshold,
+    double CLAHEClipLimit,
+    double gaussianBlurKernelSize,
+    double cannyUpperThresholdCoeff,
+    double cannyLowerThresholdCoeff,
+    double boundingRectangleMaxArea,
+    int bilateralKernelSize,
+    double bilateralKernelIntensitySigma,
+    double bilateralKernelSpatialSigma,
+    double boundingRectMaxAreaCoeff)
 {
-    if (inputImage.empty())
-    {
+    if (inputImage.empty()) {
         throw std::invalid_argument("Input image for binarization is empty");
     }
 
-    if (inputImage.type() != CV_8UC3)
-    {
-        if (inputImage.channels() == 1)
-        {
+    if (inputImage.type() != CV_8UC3) {
+        if (inputImage.channels() == 1) {
             cv::cvtColor(inputImage, inputImage, cv::COLOR_GRAY2BGR);
-        }
-        else
-        {
+        } else {
             throw std::invalid_argument("Invalid type of image for binarization (required 24 bits per pixel)");
         }
     }
@@ -108,29 +102,26 @@ void prl::binarizeFBCITB(
     //! if Canny detector and local variance operations are not used then use both.
     bool isCannyRequired = useCanny;
     bool isVariancesMapRequired = useVariancesMap;
-    if (!isCannyRequired && !isVariancesMapRequired)
-    {
+    if (!isCannyRequired && !isVariancesMapRequired) {
         useCanny = useVariancesMap = true;
     }
 
     cv::Mat imageToProc = inputImage.clone();
-    //Mat image_to_show = image_to_proc.clone();
+    // Mat image_to_show = image_to_proc.clone();
 
-/*    if ((operations & USE_OTHER_COLOR_SPACE) != 0)
-    {
-        // change color space
-        cv::cvtColor(imageToProc, imageToProc,
-                     static_cast<int>(GetFBCITBParam(paramsMap, COLOR_SPACE)));
-    }*/
+    /*    if ((operations & USE_OTHER_COLOR_SPACE) != 0)
+        {
+            // change color space
+            cv::cvtColor(imageToProc, imageToProc,
+                         static_cast<int>(GetFBCITBParam(paramsMap, COLOR_SPACE)));
+        }*/
 
-    if (useCLAHE)
-    {
+    if (useCLAHE) {
         //! contrast enhancement
         EnhanceLocalContrastByCLAHE(imageToProc, imageToProc, CLAHEClipLimit, false);
     }
 
-    if (useBilateral)
-    {
+    if (useBilateral) {
         //! bilateral filtration
         std::vector<cv::Mat> channelsForBilateralFiltration(imageToProc.channels());
         std::vector<cv::Mat> tempChannelsForBilateralFiltration(imageToProc.channels());
@@ -143,11 +134,10 @@ void prl::binarizeFBCITB(
         double intensitySigma = bilateralKernelIntensitySigma;
         double spatialSigma = bilateralKernelSpatialSigma;
 
-        for (size_t i = 0; i < channelsForBilateralFiltration.size(); ++i)
-        {
+        for (size_t i = 0; i < channelsForBilateralFiltration.size(); ++i) {
             cv::bilateralFilter(channelsForBilateralFiltration[i],
-                                tempChannelsForBilateralFiltration[i], kernelSize,
-                                intensitySigma, spatialSigma);
+                tempChannelsForBilateralFiltration[i], kernelSize,
+                intensitySigma, spatialSigma);
         }
 
         cv::merge(tempChannelsForBilateralFiltration, imageToProc);
@@ -155,8 +145,7 @@ void prl::binarizeFBCITB(
 
     cv::Mat resultCanny;
 
-    if (useCanny)
-    {
+    if (useCanny) {
         //! use Canny detector
         int kernelSize = static_cast<int>(gaussianBlurKernelSize);
         double upperCoeff = cannyUpperThresholdCoeff;
@@ -167,14 +156,13 @@ void prl::binarizeFBCITB(
     //! get map of local variance
     cv::Mat varianceMap;
 
-    if (useVariancesMap)
-    {
+    if (useVariancesMap) {
         MatToLocalVarianceMap(inputImage, varianceMap);
 
         varianceMap = (varianceMap > varianceMapThreshold);
 
-        //cv::dilate(variance_map, variance_map, cv::Mat(), cv::Point(-1, -1), 2);
-        //cv::erode(variance_map, variance_map, cv::Mat(), cv::Point(-1, -1), 2);
+        // cv::dilate(variance_map, variance_map, cv::Mat(), cv::Point(-1, -1), 2);
+        // cv::erode(variance_map, variance_map, cv::Mat(), cv::Point(-1, -1), 2);
 
         cv::convertScaleAbs(varianceMap, varianceMap, 255, 0);
 
@@ -182,35 +170,30 @@ void prl::binarizeFBCITB(
         cv::split(varianceMap, varianceMapChannels);
         varianceMap = varianceMapChannels[0] & varianceMapChannels[1] & varianceMapChannels[2];
 
-        if (useCannyOnVariances)
-        {
+        if (useCannyOnVariances) {
             cv::Canny(varianceMap, varianceMap, 64, 128);
         }
     }
 
-    if (isCannyRequired && isVariancesMapRequired)
-    {
+    if (isCannyRequired && isVariancesMapRequired) {
         varianceMap &= resultCanny;
     }
 
-    std::vector<std::vector<cv::Point> > contours;
+    std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
 
     //! contours detection
-    if (useVariancesMap)
-    {
+    if (useVariancesMap) {
         cv::findContours(varianceMap, contours, hierarchy, cv::RETR_TREE,
-                         cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+            cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
     }
 
-    if (isCannyRequired && !isVariancesMapRequired)
-    {
+    if (isCannyRequired && !isVariancesMapRequired) {
         cv::findContours(resultCanny, contours, hierarchy, cv::RETR_TREE,
-                         cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+            cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
     }
 
-    if (contours.empty())
-    {
+    if (contours.empty()) {
         outputImage = cv::Mat(imageToProc.size(), CV_8UC1);
         outputImage.setTo(255);
 
@@ -219,41 +202,32 @@ void prl::binarizeFBCITB(
 
     RemoveChildrenContours(contours, hierarchy);
 
-    std::vector<std::vector<cv::Point> > tempContours;
+    std::vector<std::vector<cv::Point>> tempContours;
 
     double m_boundingRectMaxAreaCoeff = boundingRectangleMaxArea;
-    int boundingRectMaxArea = static_cast<int>(m_boundingRectMaxAreaCoeff * imageToProc.cols *
-                                               imageToProc.rows);
+    int boundingRectMaxArea = static_cast<int>(m_boundingRectMaxAreaCoeff * imageToProc.cols * imageToProc.rows);
 
     //! get bounding rectangles
     std::vector<cv::Rect> contourBoundingRectangles;
-    for (size_t i = 0; i < contours.size(); ++i)
-    {
+    for (size_t i = 0; i < contours.size(); ++i) {
         cv::Rect contourBoundingRectangle = cv::boundingRect(contours[i]);
 
         bool isBoundingRectangleAreaBiggerThanMin = contourBoundingRectangle.area() > 10;
-        bool isBoundingRectangleAreaLesserThanMax =
-                contourBoundingRectangle.area() < boundingRectMaxArea;
+        bool isBoundingRectangleAreaLesserThanMax = contourBoundingRectangle.area() < boundingRectMaxArea;
 
-        bool isBoundingRectangleWidthBiggerThanMax =
-                contourBoundingRectangle.width >= static_cast<int>(0.8 * imageToProc.cols);
-        bool isBoundingRectangleHeightBiggerThanMax =
-                contourBoundingRectangle.height >= static_cast<int>(0.8 * imageToProc.rows);
+        bool isBoundingRectangleWidthBiggerThanMax = contourBoundingRectangle.width >= static_cast<int>(0.8 * imageToProc.cols);
+        bool isBoundingRectangleHeightBiggerThanMax = contourBoundingRectangle.height >= static_cast<int>(0.8 * imageToProc.rows);
 
-        if (isBoundingRectangleAreaBiggerThanMin && isBoundingRectangleAreaLesserThanMax &&
-            !isBoundingRectangleWidthBiggerThanMax && !isBoundingRectangleHeightBiggerThanMax)
-        {
+        if (isBoundingRectangleAreaBiggerThanMin && isBoundingRectangleAreaLesserThanMax && !isBoundingRectangleWidthBiggerThanMax && !isBoundingRectangleHeightBiggerThanMax) {
             tempContours.push_back(contours[i]);
             contourBoundingRectangles.push_back(contourBoundingRectangle);
         }
-
     }
 
     contours = tempContours;
     tempContours.clear();
 
-    if (imageToProc.channels() == 3)
-    {
+    if (imageToProc.channels() == 3) {
         cv::cvtColor(imageToProc, imageToProc, cv::COLOR_BGR2GRAY);
         cv::cvtColor(imageToProc, imageToProc, cv::COLOR_GRAY2BGR);
     }
@@ -263,15 +237,13 @@ void prl::binarizeFBCITB(
     resultImage.setTo(255);
     resultImage2.setTo(255);
 
-    for (size_t i = 0; i < contours.size(); ++i)
-    {
+    for (size_t i = 0; i < contours.size(); ++i) {
 
         int N_E = static_cast<int>(contours[i].size());
 
         //! foreground color
         cv::Vec3f F_EB;
-        for (size_t pointNo = 0; pointNo < contours[i].size(); ++pointNo)
-        {
+        for (size_t pointNo = 0; pointNo < contours[i].size(); ++pointNo) {
             F_EB += imageToProc.at<cv::Vec3b>(contours[i][pointNo]);
         }
         F_EB /= N_E;
@@ -282,61 +254,72 @@ void prl::binarizeFBCITB(
         cv::Rect imageRectangle(0, 0, imageToProc.cols, imageToProc.rows);
 
         point = (cv::Point(contourBoundingRectangles[i].x - 1, contourBoundingRectangles[i].y - 1));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
         point = (cv::Point(contourBoundingRectangles[i].x - 1, contourBoundingRectangles[i].y - 0));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
         point = (cv::Point(contourBoundingRectangles[i].x - 0, contourBoundingRectangles[i].y - 1));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
 
         point = (cv::Point(contourBoundingRectangles[i].x + contourBoundingRectangles[i].width + 1,
-                           contourBoundingRectangles[i].y - 1));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y - 1));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
         point = (cv::Point(contourBoundingRectangles[i].x + contourBoundingRectangles[i].width + 0,
-                           contourBoundingRectangles[i].y - 1));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y - 1));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
         point = (cv::Point(contourBoundingRectangles[i].x + contourBoundingRectangles[i].width + 1,
-                           contourBoundingRectangles[i].y - 0));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y - 0));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
 
         point = (cv::Point(contourBoundingRectangles[i].x - 1,
-                           contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 1));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 1));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
         point = (cv::Point(contourBoundingRectangles[i].x - 1,
-                           contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 0));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 0));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
         point = (cv::Point(contourBoundingRectangles[i].x - 0,
-                           contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 1));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 1));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
 
         point = (cv::Point(contourBoundingRectangles[i].x + contourBoundingRectangles[i].width + 1,
-                           contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 1));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 1));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
         point = (cv::Point(contourBoundingRectangles[i].x + contourBoundingRectangles[i].width + 0,
-                           contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 1));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 1));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
         point = (cv::Point(contourBoundingRectangles[i].x + contourBoundingRectangles[i].width + 1,
-                           contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 0));
-        if (point.inside(imageRectangle))
-        { B.push_back(point); }
+            contourBoundingRectangles[i].y + contourBoundingRectangles[i].height + 0));
+        if (point.inside(imageRectangle)) {
+            B.push_back(point);
+        }
 
         std::vector<uchar> B_EB_1;
         std::vector<uchar> B_EB_2;
         std::vector<uchar> B_EB_3;
 
         //! get median for each color channel
-        for (const auto& pointPerChannel : B)
-        {
+        for (const auto& pointPerChannel : B) {
             auto point_color = imageToProc.at<cv::Vec3b>(pointPerChannel);
 
             B_EB_1.push_back(point_color[0]);
@@ -358,7 +341,7 @@ void prl::binarizeFBCITB(
         //! binarization of area selected by bounding rectangle
         cv::Mat imageInContourBoundingRectangle = imageToProc(contourBoundingRectangles[i]);
         std::vector<cv::Mat> imageInContourBoundingRectangleChannels(
-                imageInContourBoundingRectangle.channels());
+            imageInContourBoundingRectangle.channels());
 
         cv::split(imageInContourBoundingRectangle, imageInContourBoundingRectangleChannels);
 
@@ -368,39 +351,31 @@ void prl::binarizeFBCITB(
         BW_EB_image[2] = imageInContourBoundingRectangleChannels[2];
 
         //! binarization
-        for (int ch = 0; ch < static_cast<int>(BW_EB_image.size()); ++ch)
-        {
-            if (F_EB[ch] < B_EB[ch])
-            {
+        for (int ch = 0; ch < static_cast<int>(BW_EB_image.size()); ++ch) {
+            if (F_EB[ch] < B_EB[ch]) {
                 BW_EB_image[ch] = 255 * (BW_EB_image[ch] >= F_EB[ch]);
-            }
-            else
-            {
+            } else {
                 BW_EB_image[ch] = 255 * (BW_EB_image[ch] < F_EB[ch]);
             }
         }
 
-        //Mat combinationOR = BW_EB_image[0] | BW_EB_image[1] | BW_EB_image[2];
+        // Mat combinationOR = BW_EB_image[0] | BW_EB_image[1] | BW_EB_image[2];
         cv::Mat combinationAND = BW_EB_image[0] & BW_EB_image[1] & BW_EB_image[2];
 
-        //Mat resultImageROI = resultImage(contourBoundingRectangles[i]);
+        // Mat resultImageROI = resultImage(contourBoundingRectangles[i]);
         cv::Mat resultImage2ROI = resultImage2(contourBoundingRectangles[i]);
 
-        //combinationOR.copyTo(resultImageROI);
+        // combinationOR.copyTo(resultImageROI);
         combinationAND.copyTo(resultImage2ROI);
-
     }
 
     //! morphology operations
-    if (useMorphology)
-    {
-        //cv::dilate(resultImage, resultImage, cv::Mat(), cv::Point(-1, -1), 2);
-        //cv::erode(resultImage, resultImage, cv::Mat(), cv::Point(-1, -1), 2);
+    if (useMorphology) {
+        // cv::dilate(resultImage, resultImage, cv::Mat(), cv::Point(-1, -1), 2);
+        // cv::erode(resultImage, resultImage, cv::Mat(), cv::Point(-1, -1), 2);
 
         cv::dilate(resultImage2, resultImage2, cv::Mat(), cv::Point(-1, -1), 2);
         cv::erode(resultImage2, resultImage2, cv::Mat(), cv::Point(-1, -1), 2);
     }
     outputImage = resultImage2.clone();
 }
-
-

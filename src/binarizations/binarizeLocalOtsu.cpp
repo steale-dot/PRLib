@@ -27,30 +27,27 @@
 #include <stdexcept>
 #include <vector>
 
+#include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/features2d/features2d.hpp>
 
 #include "imageLibCommon.h"
 
-
 void prl::binarizeLocalOtsu(
-        cv::Mat& inputImage, cv::Mat& outputImage,
-        double maxValue,
-        double CLAHEClipLimit,
-        int GaussianBlurKernelSize,
-        double CannyUpperThresholdCoeff,
-        double CannyLowerThresholdCoeff,
-        int CannyMorphIters)
+    cv::Mat& inputImage, cv::Mat& outputImage,
+    double maxValue,
+    double CLAHEClipLimit,
+    int GaussianBlurKernelSize,
+    double CannyUpperThresholdCoeff,
+    double CannyLowerThresholdCoeff,
+    int CannyMorphIters)
 {
     //! input image must be not empty
-    if (inputImage.empty())
-    {
+    if (inputImage.empty()) {
         throw std::invalid_argument("Input image for binarization is empty");
     }
 
-    if (!(maxValue >= 0 && maxValue <= 255))
-    {
+    if (!(maxValue >= 0 && maxValue <= 255)) {
         throw std::invalid_argument("Max value must be in range [0; 255]");
     }
 
@@ -58,12 +55,9 @@ void prl::binarizeLocalOtsu(
     cv::Mat imageSelectedColorSpace;
 
     //! we work with gray image
-    if (inputImage.channels() != 1)
-    {
+    if (inputImage.channels() != 1) {
         cv::cvtColor(inputImage, imageSelectedColorSpace, cv::COLOR_RGB2GRAY);
-    }
-    else
-    {
+    } else {
         imageSelectedColorSpace = inputImage.clone();
     }
 
@@ -78,8 +72,7 @@ void prl::binarizeLocalOtsu(
     }
 
     //! Enhance local contrast if it is required
-    if (CLAHEClipLimit > 0)
-    {
+    if (CLAHEClipLimit > 0) {
         EnhanceLocalContrastByCLAHE(imageToProc, imageToProc, CLAHEClipLimit, true);
     }
 
@@ -87,13 +80,12 @@ void prl::binarizeLocalOtsu(
 
     //! detect edges by using Canny edge detector
     CannyEdgeDetection(imageToProc, resultCanny,
-                       GaussianBlurKernelSize,
-                       CannyUpperThresholdCoeff, CannyLowerThresholdCoeff,
-                       CannyMorphIters);
+        GaussianBlurKernelSize,
+        CannyUpperThresholdCoeff, CannyLowerThresholdCoeff,
+        CannyMorphIters);
     cv::dilate(resultCanny, resultCanny, cv::Mat(), cv::Point(-1, -1), 3);
 
-    if (imageSelectedColorSpace.channels() != 3)
-    {
+    if (imageSelectedColorSpace.channels() != 3) {
         cv::cvtColor(imageSelectedColorSpace, imageSelectedColorSpace, cv::COLOR_GRAY2BGR);
     }
 
@@ -105,14 +97,14 @@ void prl::binarizeLocalOtsu(
         std::vector<cv::Vec4i> hierarchy;
 
         cv::findContours(resultCanny, contoursAll, hierarchy, cv::RETR_EXTERNAL,
-                         cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+            cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
         contours = contoursAll;
 
         RemoveChildrenContours(contours, hierarchy);
 
         // remove unclosed contours
-        //contours.erase(remove_if(contours.begin(), contours.end(), IsContourUnclosed),
+        // contours.erase(remove_if(contours.begin(), contours.end(), IsContourUnclosed),
         //	contours.end());
 
         // remove contours using next conditions
@@ -121,7 +113,7 @@ void prl::binarizeLocalOtsu(
         // - Components larger than 0.6 times the image dimensions  are removed.
         // - Furthermore, small and spurious components with areas less than 8 pixels are not
         //   considered for further processing.
-        //contours.erase(
+        // contours.erase(
         //	remove_if(
         //		contours.begin(), contours.end(),
         //		[&imageSelectedColorSpace](vector<Point>& testedContour) -> bool
@@ -131,7 +123,6 @@ void prl::binarizeLocalOtsu(
         //	),
         //	contours.end()
         //);
-
     }
 
     //! binarization
@@ -142,8 +133,7 @@ void prl::binarizeLocalOtsu(
         binarized.setTo(255);
 
         //! for each contour ...
-        for (size_t contourNo = 0; contourNo < contours.size(); ++contourNo)
-        {
+        for (size_t contourNo = 0; contourNo < contours.size(); ++contourNo) {
 
             std::vector<cv::Point>& contour = contours[contourNo];
 

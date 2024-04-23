@@ -30,14 +30,14 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 void prl::warpCrop(const cv::Mat& inputImage,
-                   cv::Mat& outputImage,
-                   const int x0, const int y0,
-                   const int x1, const int y1,
-                   const int x2, const int y2,
-                   const int x3, const int y3,
-                   double ratio,
-                   const int borderMode /*= cv::BORDER_CONSTANT*/,
-                   const cv::Scalar& borderValue /*= cv::Scalar()*/)
+    cv::Mat& outputImage,
+    const int x0, const int y0,
+    const int x1, const int y1,
+    const int x2, const int y2,
+    const int x3, const int y3,
+    double ratio,
+    const int borderMode /*= cv::BORDER_CONSTANT*/,
+    const cv::Scalar& borderValue /*= cv::Scalar()*/)
 {
     const double side1 = std::sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
     const double side2 = std::sqrt((x3 - x2) * (x3 - x2) + (y3 - y2) * (y3 - y2));
@@ -47,45 +47,41 @@ void prl::warpCrop(const cv::Mat& inputImage,
     long bitmapWidth = cvRound(std::max(side1, side2));
     long bitmapHeight = cvRound(std::max(side3, side4));
 
-    if (ratio > 0.0)
-    {
+    if (ratio > 0.0) {
         bitmapWidth = cvRound(bitmapHeight / ratio);
     }
 
-    float srcBuff[] = {static_cast<float>(x0), static_cast<float>(y0),
-                       static_cast<float>(x1), static_cast<float>(y1),
-                       static_cast<float>(x2), static_cast<float>(y2),
-                       static_cast<float>(x3), static_cast<float>(y3)};
+    float srcBuff[] = { static_cast<float>(x0), static_cast<float>(y0),
+        static_cast<float>(x1), static_cast<float>(y1),
+        static_cast<float>(x2), static_cast<float>(y2),
+        static_cast<float>(x3), static_cast<float>(y3) };
 
-    float dstBuff[] = {static_cast<float>(0), static_cast<float>(0),
-                       static_cast<float>(bitmapWidth), static_cast<float>(0),
-                       static_cast<float>(bitmapWidth), static_cast<float>(bitmapHeight),
-                       static_cast<float>(0), static_cast<float>(bitmapHeight)};
+    float dstBuff[] = { static_cast<float>(0), static_cast<float>(0),
+        static_cast<float>(bitmapWidth), static_cast<float>(0),
+        static_cast<float>(bitmapWidth), static_cast<float>(bitmapHeight),
+        static_cast<float>(0), static_cast<float>(bitmapHeight) };
 
     cv::Mat src(4, 1, CV_32FC2, srcBuff);
     cv::Mat dst(4, 1, CV_32FC2, dstBuff);
 
     cv::Mat perspectiveTransform = cv::getPerspectiveTransform(src, dst);
     cv::warpPerspective(
-            inputImage, outputImage, perspectiveTransform, cv::Size(bitmapWidth, bitmapHeight),
-            cv::INTER_LINEAR,
-            borderMode, borderValue);
+        inputImage, outputImage, perspectiveTransform, cv::Size(bitmapWidth, bitmapHeight),
+        cv::INTER_LINEAR,
+        borderMode, borderValue);
 }
 
-
 void prl::warpCrop(cv::Mat& inputImage, cv::Mat& outputImage,
-                   const std::vector<cv::Point>& points,
-                   double ratio,
-                   int borderMode /*= cv::BORDER_CONSTANT*/,
-                   const cv::Scalar& borderValue /*= cv::Scalar()*/)
+    const std::vector<cv::Point>& points,
+    double ratio,
+    int borderMode /*= cv::BORDER_CONSTANT*/,
+    const cv::Scalar& borderValue /*= cv::Scalar()*/)
 {
-    if (inputImage.empty())
-    {
+    if (inputImage.empty()) {
         throw std::invalid_argument("Image for warping is empty");
     }
 
-    if (points.size() != 4)
-    {
+    if (points.size() != 4) {
         throw std::invalid_argument("Size of array of base points for warping isn't equal 4");
     }
 

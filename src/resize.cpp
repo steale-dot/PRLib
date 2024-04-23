@@ -30,17 +30,13 @@ void prl::resize(const cv::Mat& src, cv::Mat& dst, int scaleX, int scaleY, int m
 {
     cv::Size newImageSize;
 
-    if (scaleX > 0 && scaleY > 0)
-    {
+    if (scaleX > 0 && scaleY > 0) {
         newImageSize = cv::Size(
-                static_cast<int>(src.cols * scaleX),
-                static_cast<int>(src.rows * scaleY)
-        );
+            static_cast<int>(src.cols * scaleX),
+            static_cast<int>(src.rows * scaleY));
 
         cv::resize(src, dst, newImageSize, 0, 0, cv::INTER_AREA);
-    }
-    else
-    {
+    } else {
         int longSide = std::max(src.cols, src.rows);
 
         int scaleFactorX = 1;
@@ -48,8 +44,7 @@ void prl::resize(const cv::Mat& src, cv::Mat& dst, int scaleX, int scaleY, int m
 
         dst = src.clone();
 
-        while (longSide > maxSize)
-        {
+        while (longSide > maxSize) {
             cv::pyrDown(dst, dst);
 
             longSide = std::max(dst.cols, dst.rows);

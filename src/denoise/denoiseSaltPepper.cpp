@@ -29,8 +29,7 @@
 void prl::denoiseSaltPepper(const cv::Mat& inputImage, cv::Mat& outputImage, int kernelSize, size_t times)
 {
     outputImage = inputImage.clone();
-    for(size_t i = 0; i < times; ++i)
-    {
+    for (size_t i = 0; i < times; ++i) {
         cv::medianBlur(outputImage, outputImage, kernelSize);
     }
 }

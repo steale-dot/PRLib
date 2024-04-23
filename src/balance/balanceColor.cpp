@@ -33,22 +33,19 @@
 #include "utils.h"
 
 void prl::colorBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
-                       double colorBalanceGamma, double saturationGamma)
+    double colorBalanceGamma, double saturationGamma)
 {
-    if (inputImage.empty())
-    {
+    if (inputImage.empty()) {
         throw std::invalid_argument("ColorBalance: Input image for filtration is empty");
     }
 
-    if (inputImage.channels() != 3 && inputImage.channels() != 4)
-    {
+    if (inputImage.channels() != 3 && inputImage.channels() != 4) {
         throw std::invalid_argument("ColorBalance: image should be colored");
     }
 
     cv::Mat imageCopy = inputImage.clone();
 
-    if (inputImage.channels() == 4)
-    {
+    if (inputImage.channels() == 4) {
         cv::cvtColor(imageCopy, imageCopy, cv::COLOR_BGRA2BGR);
     }
 
@@ -68,8 +65,7 @@ void prl::colorBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
 
     cv::merge(srcChans, convertedTmp);
 
-    if (!eq_d(saturationGamma, 1.0))
-    {
+    if (!eq_d(saturationGamma, 1.0)) {
         cv::Mat hsvImg;
 
         cv::cvtColor(convertedTmp, hsvImg, cv::COLOR_BGR2HSV);

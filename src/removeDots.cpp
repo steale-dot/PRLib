@@ -38,12 +38,9 @@ void prl::removeDots(const cv::Mat& inputImage, cv::Mat& outputImage, const doub
 
     // Converting to grayscale
     cv::Mat gray;
-    if (inputImage.channels() == 3)
-    {
+    if (inputImage.channels() == 3) {
         cv::cvtColor(inputImage, gray, cv::COLOR_BGR2GRAY);
-    }
-    else
-    {
+    } else {
         gray = inputImage;
     }
 
@@ -57,7 +54,7 @@ void prl::removeDots(const cv::Mat& inputImage, cv::Mat& outputImage, const doub
 
     params.filterByCircularity = true;
     params.minCircularity = 0.9;
-    //params.maxCircularity = 1.0;
+    // params.maxCircularity = 1.0;
 
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 
@@ -92,5 +89,5 @@ void prl::removeDots(const cv::Mat& inputImage, cv::Mat& outputImage, const doub
     {
         cv::circle(outputImage, keypoint.pt, keypoint.size / 2.0 + 3, cv::Scalar(255,255,255), cv::FILLED);
     }*/
-    cv::drawKeypoints(outputImage, keypoints, outputImage, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::drawKeypoints(outputImage, keypoints, outputImage, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 }

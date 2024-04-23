@@ -30,33 +30,25 @@
 
 #include "utils.h"
 
-namespace prl
-{
+namespace prl {
 void rotate(const cv::Mat& inputImage, cv::Mat& outputImage, double angle)
 {
     angle = std::fmod(angle, 360.0);
-    if (eq_d(angle, 90.0))
-    {
+    if (eq_d(angle, 90.0)) {
         // rotate on 90
         cv::transpose(inputImage, outputImage);
         cv::flip(outputImage, outputImage, 1);
         return;
-    }
-    else if (eq_d(angle, 180.0))
-    {
+    } else if (eq_d(angle, 180.0)) {
         // rotate on 180
         cv::flip(inputImage, outputImage, -1);
         return;
-    }
-    else if (eq_d(angle, 270.0))
-    {
+    } else if (eq_d(angle, 270.0)) {
         // rotate on 270
         cv::transpose(inputImage, outputImage);
         cv::flip(outputImage, outputImage, 0);
         return;
-    }
-    else
-    {
+    } else {
         outputImage = inputImage.clone();
         cv::bitwise_not(inputImage, inputImage);
 

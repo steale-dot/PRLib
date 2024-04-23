@@ -29,22 +29,19 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-
 void prl::simpleWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
-                             const double k)
+    const double k)
 {
     cv::Mat inputImageMat = inputImage.clone();
 
-    if (inputImageMat.empty())
-    {
+    if (inputImageMat.empty()) {
         throw std::invalid_argument(
-                "SimpleWhiteBalance: input image is empty.");
+            "SimpleWhiteBalance: input image is empty.");
     }
 
-    if (inputImageMat.channels() != 3)
-    {
+    if (inputImageMat.channels() != 3) {
         throw std::invalid_argument(
-                "SimpleWhiteBalance: input image hasn't 3 channels.");
+            "SimpleWhiteBalance: input image hasn't 3 channels.");
     }
 
     cv::Mat outputImageMat;
@@ -53,11 +50,9 @@ void prl::simpleWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
     int hists[3][256];
     memset(hists, 0, 3 * 256 * sizeof(int));
 
-    for (size_t y = 0; y < inputImageMat.rows; ++y)
-    {
+    for (size_t y = 0; y < inputImageMat.rows; ++y) {
         const uchar* const ptr = inputImageMat.ptr<uchar>(static_cast<int>(y));
-        for (size_t x = 0; x < inputImageMat.cols; ++x)
-        {
+        for (size_t x = 0; x < inputImageMat.cols; ++x) {
             /*for (size_t j = 0; j < 3; ++j)
             {
                 hists[j][ptr[x * 3 + j]] += 1;
@@ -71,24 +66,19 @@ void prl::simpleWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
     // cumulative hist
     size_t total = inputImageMat.cols * inputImageMat.rows;
     int vmin[3], vmax[3];
-    for (int i = 0; i < 3; ++i)
-    {
-        for (int j = 0; j < 255; ++j)
-        {
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 255; ++j) {
             hists[i][j + 1] += hists[i][j];
         }
         vmin[i] = 0;
         vmax[i] = 255;
-        while (hists[i][vmin[i]] < k * total)
-        {
+        while (hists[i][vmin[i]] < k * total) {
             vmin[i] += 1;
         }
-        while (hists[i][vmax[i]] > (1 - k) * total)
-        {
+        while (hists[i][vmax[i]] > (1 - k) * total) {
             vmax[i] -= 1;
         }
-        if (vmax[i] < 255 - 1)
-        {
+        if (vmax[i] < 255 - 1) {
             vmax[i] += 1;
         }
     }
@@ -97,12 +87,10 @@ void prl::simpleWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
     float vmax1_vmin1_dist_mul255 = 255.0f / (vmax[1] - vmin[1]);
     float vmax2_vmin2_dist_mul255 = 255.0f / (vmax[2] - vmin[2]);
 
-    for (size_t y = 0; y < outputImageMat.rows; ++y)
-    {
+    for (size_t y = 0; y < outputImageMat.rows; ++y) {
         uchar* ptr = outputImageMat.ptr<uchar>(static_cast<int>(y));
-        for (size_t x = 0; x < outputImageMat.cols; ++x)
-        {
-            //for (size_t j = 0; j < 3; ++j)
+        for (size_t x = 0; x < outputImageMat.cols; ++x) {
+            // for (size_t j = 0; j < 3; ++j)
             //{
             //	uchar val = ptr[x * 3 + j];
             //	if (val < vmin[j])
@@ -119,18 +107,24 @@ void prl::simpleWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
             uchar val1 = ptr[usedPtrPos + 1];
             uchar val2 = ptr[usedPtrPos + 2];
 
-            if (val0 < vmin[0])
-            { val0 = vmin[0]; }
-            if (val0 > vmax[0])
-            { val0 = vmax[0]; }
-            if (val1 < vmin[1])
-            { val1 = vmin[1]; }
-            if (val1 > vmax[1])
-            { val1 = vmax[1]; }
-            if (val2 < vmin[2])
-            { val2 = vmin[2]; }
-            if (val2 > vmax[2])
-            { val2 = vmax[2]; }
+            if (val0 < vmin[0]) {
+                val0 = vmin[0];
+            }
+            if (val0 > vmax[0]) {
+                val0 = vmax[0];
+            }
+            if (val1 < vmin[1]) {
+                val1 = vmin[1];
+            }
+            if (val1 > vmax[1]) {
+                val1 = vmax[1];
+            }
+            if (val2 < vmin[2]) {
+                val2 = vmin[2];
+            }
+            if (val2 > vmax[2]) {
+                val2 = vmax[2];
+            }
 
             ptr[usedPtrPos + 0] = static_cast<uchar>((val0 - vmin[0]) * vmax0_vmin0_dist_mul255);
             ptr[usedPtrPos + 1] = static_cast<uchar>((val1 - vmin[1]) * vmax1_vmin1_dist_mul255);
@@ -140,4 +134,3 @@ void prl::simpleWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
 
     outputImage = outputImageMat.clone();
 }
-

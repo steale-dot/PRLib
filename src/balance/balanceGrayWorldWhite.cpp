@@ -31,15 +31,12 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-namespace prl
-{
+namespace prl {
 
 void getAverageValues(const cv::Mat& src, double* ml, double* ma, double* mb, const double p)
 {
-    for (int i = 0; i < src.rows; ++i)
-    {
-        for (int j = 0; j < src.cols; ++j)
-        {
+    for (int i = 0; i < src.rows; ++i) {
+        for (int j = 0; j < src.cols; ++j) {
             cv::Vec3b v1 = src.at<cv::Vec3b>(i, j);
             double lc = std::pow(v1.val[0], p);
             double ac = std::pow(v1.val[1], p);
@@ -56,19 +53,16 @@ void getAverageValues(const cv::Mat& src, double* ml, double* ma, double* mb, co
     *mb = std::pow(*mb / (src.cols * src.rows), 1.0 / p);
 }
 
-
 void grayWorldWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
-                           const double pNorm, const bool withMax)
+    const double pNorm, const bool withMax)
 {
     cv::Mat inputImageMat = inputImage.clone();
 
-    if (inputImageMat.empty())
-    {
+    if (inputImageMat.empty()) {
         throw std::invalid_argument("GrayWorldWhiteBalance: input image is empty");
     }
 
-    if (inputImageMat.channels() != 3)
-    {
+    if (inputImageMat.channels() != 3) {
         throw std::invalid_argument("GrayWorldWhiteBalance: input image hasn't 3 channels");
     }
 
@@ -81,8 +75,7 @@ void grayWorldWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
 
     double r = (ma + mb + ml) / 3.0;
 
-    if (withMax)
-    {
+    if (withMax) {
         r = std::max(ma, std::max(mb, ml));
     }
 
@@ -92,8 +85,7 @@ void grayWorldWhiteBalance(const cv::Mat& inputImage, cv::Mat& outputImage,
 
     auto itout = outputImageMat.begin<cv::Vec3b>();
     for (auto it = inputImageMat.begin<cv::Vec3b>(), itend = inputImageMat.end<cv::Vec3b>();
-         it != itend; ++it, ++itout)
-    {
+         it != itend; ++it, ++itout) {
         cv::Vec3b v1 = *it;
 
         double l = v1.val[0] * r_div_ml;

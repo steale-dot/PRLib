@@ -24,8 +24,8 @@
 
 #include "deskew.h"
 
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #if defined(WIN32) || defined(_MSC_VER)
 #include <windows.h>
@@ -35,15 +35,14 @@
 
 #include <leptonica/allheaders.h>
 
-
 #if defined(_WIN32) || defined(_MSC_VER)
-#include <direct.h>
 #include <codecvt>
+#include <direct.h>
 #else
 
 #include <unistd.h>
 
-#endif //WIN32
+#endif // WIN32
 
 #include <algorithm>
 #include <functional>
@@ -70,16 +69,14 @@
 double prl::findOrientation(const cv::Mat& inputImage)
 {
     cv::Mat grayImage;
-    if(inputImage.channels() == 3)
-    {
+    if (inputImage.channels() == 3) {
         cv::cvtColor(inputImage, grayImage, cv::COLOR_BGR2GRAY);
     }
 
     cv::adaptiveThreshold(grayImage, grayImage, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 19, 9);
 
     PIX* pix = prl::opencvToLeptonica(&grayImage);
-    if (!pix)
-    {
+    if (!pix) {
         return 0;
     }
 
@@ -87,20 +84,16 @@ double prl::findOrientation(const cv::Mat& inputImage)
     {
         l_float32 fUpConf;
         l_float32 fLeftConf;
-        if (pixOrientDetectDwa(pix, &fUpConf, &fLeftConf, 0, 0) != 0)
-        {
-            if (pix)
-            {
+        if (pixOrientDetectDwa(pix, &fUpConf, &fLeftConf, 0, 0) != 0) {
+            if (pix) {
                 pixDestroy(&pix);
             }
 
             return 0;
         }
 
-        if (makeOrientDecision(fUpConf, fLeftConf, 0.0, 0.0, &iOrientation, 0) != 0)
-        {
-            if (pix)
-            {
+        if (makeOrientDecision(fUpConf, fLeftConf, 0.0, 0.0, &iOrientation, 0) != 0) {
+            if (pix) {
                 pixDestroy(&pix);
             }
 
@@ -109,23 +102,15 @@ double prl::findOrientation(const cv::Mat& inputImage)
     }
 
     double angle = 0;
-    if (iOrientation == L_TEXT_ORIENT_UP)
-    {
+    if (iOrientation == L_TEXT_ORIENT_UP) {
         angle = 0.0;
-    }
-    else if (iOrientation == L_TEXT_ORIENT_LEFT)
-    {
+    } else if (iOrientation == L_TEXT_ORIENT_LEFT) {
         angle = 90.0;
-    }
-    else if (iOrientation == L_TEXT_ORIENT_DOWN)
-    {
+    } else if (iOrientation == L_TEXT_ORIENT_DOWN) {
         angle = 180.0;
-    }
-    else if (iOrientation == L_TEXT_ORIENT_RIGHT)
-    {
+    } else if (iOrientation == L_TEXT_ORIENT_RIGHT) {
         angle = 270.0;
-    }
-    else // if (iOrientation == L_TEXT_ORIENT_UNKNOWN)
+    } else // if (iOrientation == L_TEXT_ORIENT_UNKNOWN)
     {
         angle = 0.0;
     }
@@ -135,11 +120,10 @@ double prl::findOrientation(const cv::Mat& inputImage)
     return angle;
 }
 
-
 double prl::findAngle(const cv::Mat& inputImage)
 {
     // AA: we need black-&-white image here even if none of threshold algorithms were called before
-    //cv::adaptiveThreshold(input, input, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 15, 5);
+    // cv::adaptiveThreshold(input, input, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 15, 5);
     cv::Mat input = inputImage.clone();
 
     cv::Size imgSize = input.size();
@@ -149,54 +133,46 @@ double prl::findAngle(const cv::Mat& inputImage)
     cv::Mat disp_lines(imgSize, CV_8UC1, cv::Scalar(0, 0, 0));
 
     const int nb_lines = static_cast<int>(lines.size());
-    if (!nb_lines)
-    {
+    if (!nb_lines) {
         return 0.0;
     }
 
     std::vector<double> cv_angles = std::vector<double>(nb_lines);
 
-    for (int i = 0; i < nb_lines; ++i)
-    {
+    for (int i = 0; i < nb_lines; ++i) {
         cv::line(
-                disp_lines,
-                cv::Point(lines[i][0], lines[i][1]),
-                cv::Point(lines[i][2], lines[i][3]),
-                cv::Scalar(255, 0, 0));
+            disp_lines,
+            cv::Point(lines[i][0], lines[i][1]),
+            cv::Point(lines[i][2], lines[i][3]),
+            cv::Scalar(255, 0, 0));
 
         cv_angles[i] = atan2(
-                (double) lines[i][3] - lines[i][1],
-                (double) lines[i][2] - lines[i][0]);
+            (double)lines[i][3] - lines[i][1],
+            (double)lines[i][2] - lines[i][0]);
     }
 
-    const double delta = 0.01; //difference is less than 1 deg.
-    std::list<std::pair<double, int> > t_diff;
+    const double delta = 0.01; // difference is less than 1 deg.
+    std::list<std::pair<double, int>> t_diff;
 
-    for (auto it = cv_angles.begin(); it != cv_angles.end(); ++it)
-    {
+    for (auto it = cv_angles.begin(); it != cv_angles.end(); ++it) {
         bool found = false;
         // bypass list
-        for (auto elem = t_diff.begin(); elem != t_diff.end(); ++elem)
-        {
-            if (prl::eq_d(*it, elem->first, delta))
-            {
+        for (auto elem = t_diff.begin(); elem != t_diff.end(); ++elem) {
+            if (prl::eq_d(*it, elem->first, delta)) {
                 elem->second++;
                 found = true;
                 break;
             }
         }
-        if (!found)
-        {
+        if (!found) {
             std::pair<double, int> p(*it, 0);
             t_diff.push_back(p);
         }
     }
 
-    std::pair<double, int> max_elem =
-            *(std::max_element(t_diff.begin(), t_diff.end(),
-                               [](const std::pair<double, int>& v1,
-                                  const std::pair<double, int>& v2)
-                               { return v1.second < v2.second; }));
+    std::pair<double, int> max_elem = *(std::max_element(t_diff.begin(), t_diff.end(),
+        [](const std::pair<double, int>& v1,
+            const std::pair<double, int>& v2) { return v1.second < v2.second; }));
 
     const double cv_angle = max_elem.first * 180 / M_PI;
 
@@ -211,39 +187,31 @@ CV_EXPORTS bool prl::deskew(const cv::Mat& inputImage, cv::Mat& outputImage)
 
     cv::Mat processingImage;
 
-    if (inputImage.channels() != 1)
-    {
+    if (inputImage.channels() != 1) {
         cv::cvtColor(inputImage, processingImage, cv::COLOR_BGR2GRAY);
-    }
-    else
-    {
+    } else {
         processingImage = inputImage.clone();
     }
 
-    //TODO: Should we use here another binarization algorithm?
+    // TODO: Should we use here another binarization algorithm?
     cv::threshold(processingImage, processingImage, 128, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
     double angle = findAngle(processingImage);
 
-    if ((angle != 0) && (angle <= DBL_MAX && angle >= -DBL_MAX))
-    {
+    if ((angle != 0) && (angle <= DBL_MAX && angle >= -DBL_MAX)) {
         prl::rotate(inputImage, outputImage, angle);
         prl::rotate(processingImage, processingImage, angle);
-    }
-    else
-    {
+    } else {
         outputImage = inputImage.clone();
     }
 
     angle = findOrientation(processingImage);
 
-    if (angle != 0.0)
-    {
+    if (angle != 0.0) {
         prl::rotate(outputImage, outputImage, angle);
     }
 
-    if (outputImage.empty())
-    {
+    if (outputImage.empty()) {
         return false;
     }
 

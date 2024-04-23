@@ -33,15 +33,12 @@
 
 #include "formatConvert.h"
 
-
-namespace prl
-{
+namespace prl {
 void cleanBackgroundToWhite(const cv::Mat& inputImage, cv::Mat& outputImage)
 {
     cv::Mat inputImageMat = inputImage;
 
-    if (inputImageMat.empty())
-    {
+    if (inputImageMat.empty()) {
         throw std::invalid_argument("Input image for flipping is empty");
     }
 

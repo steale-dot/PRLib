@@ -33,7 +33,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 // PLEASE DON'T USE IT SINCE IT'S WIP!
-std::pair<cv::Point, cv::Point> findVertLine(const cv::Mat &inputImage) {
+std::pair<cv::Point, cv::Point> findVertLine(const cv::Mat& inputImage)
+{
 
     cv::Mat imageToProc = inputImage.clone();
     if (inputImage.channels() == 3) {
@@ -56,11 +57,9 @@ std::pair<cv::Point, cv::Point> findVertLine(const cv::Mat &inputImage) {
     cv::HoughLines(resultCanny, lines, 1, CV_PI / 180.0, thresholdHough, 0, 0);
 
     // Extract all vertical lines
-    for (size_t i = 0; i < lines.size(); ++i)
-    {
+    for (size_t i = 0; i < lines.size(); ++i) {
         float theta = lines[i][1];
-        if (theta > CV_PI / 180.0 * 170.0 || theta < CV_PI / 180.0 * 10.0)
-        {
+        if (theta > CV_PI / 180.0 * 170.0 || theta < CV_PI / 180.0 * 10.0) {
             vertLines.push_back(lines[i]);
         }
     }
@@ -70,9 +69,8 @@ std::pair<cv::Point, cv::Point> findVertLine(const cv::Mat &inputImage) {
 
     // Find the nearest line to the center
     int center = resultCanny.cols / 2;
-    for(const auto& line : vertLines)
-    {
-        auto lineByPoint = fromVec2f(line); 
+    for (const auto& line : vertLines) {
+        auto lineByPoint = fromVec2f(line);
     }
 
     return std::make_pair(cv::Point(0, 0), cv::Point(0, 0));

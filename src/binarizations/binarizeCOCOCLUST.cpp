@@ -32,32 +32,29 @@
 #include <stdexcept>
 #include <vector>
 
+#include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/features2d/features2d.hpp>
 
 #include "imageLibCommon.h"
 
 void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const float T_S,
-                         double CLAHEClipLimit,
-                         int GaussianBlurKernelSize,
-                         double CannyUpperThresholdCoeff,
-                         double CannyLowerThresholdCoeff,
-                         int CannyMorphIters)
+    double CLAHEClipLimit,
+    int GaussianBlurKernelSize,
+    double CannyUpperThresholdCoeff,
+    double CannyLowerThresholdCoeff,
+    int CannyMorphIters)
 {
     // input image must be not empty
-    if (inputImage.empty())
-    {
+    if (inputImage.empty()) {
         throw std::invalid_argument("binarizeCOCOCLUST: Input image for binarization is empty");
     }
     // we work with color images
-    if (inputImage.type() != CV_8UC3 && inputImage.type() != CV_8UC1)
-    {
+    if (inputImage.type() != CV_8UC3 && inputImage.type() != CV_8UC1) {
         throw std::invalid_argument("binarizeCOCOCLUST: Invalid type of image for binarization (required 8 or 24 bits per pixel)");
     }
 
-    if (T_S <= 0)
-    {
+    if (T_S <= 0) {
         throw std::invalid_argument("binarizeCOCOCLUST: Cluster distance threshold should be greater than 0");
     }
 
@@ -65,12 +62,9 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
     cv::Mat imageSelectedColorSpace;
 
     //! Processing for gray scaled image
-    if (inputImage.type() == CV_8UC3)
-    {
+    if (inputImage.type() == CV_8UC3) {
         cvtColor(inputImage, imageSelectedColorSpace, cv::COLOR_RGB2GRAY);
-    }
-    else
-    {
+    } else {
         imageSelectedColorSpace = inputImage.clone();
     }
 
@@ -85,8 +79,7 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
     }
 
     //! Enhance local contrast if it is required
-    if (CLAHEClipLimit > 0)
-    {
+    if (CLAHEClipLimit > 0) {
         EnhanceLocalContrastByCLAHE(imageToProc, imageToProc, CLAHEClipLimit, true);
     }
 
@@ -94,15 +87,14 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
 
     //! Detect edges by using Canny edge detector
     CannyEdgeDetection(imageToProc, resultCanny,
-                       GaussianBlurKernelSize,
-                       CannyUpperThresholdCoeff, CannyLowerThresholdCoeff, CannyMorphIters);
+        GaussianBlurKernelSize,
+        CannyUpperThresholdCoeff, CannyLowerThresholdCoeff, CannyMorphIters);
 
     cv::dilate(resultCanny, resultCanny, cv::Mat(), cv::Point(-1, -1), 3);
-    //erode(resultCanny, resultCanny, Mat());
+    // erode(resultCanny, resultCanny, Mat());
 
     //! We should have corresponding channels count for processing
-    if (imageSelectedColorSpace.channels() != 3)
-    {
+    if (imageSelectedColorSpace.channels() != 3) {
         cv::cvtColor(imageSelectedColorSpace, imageSelectedColorSpace, cv::COLOR_GRAY2BGR);
     }
 
@@ -116,12 +108,11 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
         std::vector<cv::Vec4i> hierarchy;
 
         cv::findContours(resultCanny, contoursAll, hierarchy,
-                         cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+            cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
         contours = contoursAll;
 
         RemoveChildrenContours(contours, hierarchy);
-
     }
 
     // Set of mean points for contours parts
@@ -138,7 +129,7 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
     const float PI_2 = PI / 2.0f;
 
     //! Set constants for normal vector  normalization
-    float normalVectorCoeffsMatrix[4] = {cosf(PI_2), -sinf(PI_2), sinf(PI_2), cosf(PI_2)};
+    float normalVectorCoeffsMatrix[4] = { cosf(PI_2), -sinf(PI_2), sinf(PI_2), cosf(PI_2) };
 
     //! Set count of normal vectors for each contour
     const int normalsNo = 6;
@@ -150,15 +141,13 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
     std::map<size_t, std::vector<std::vector<cv::Point2f>>> contourNoToNormPVectorsMap;
 
     {
-        //for (vector<Point> &contour : contours) {
-        for (size_t contourNo = 0; contourNo < contours.size(); ++contourNo)
-        {
+        // for (vector<Point> &contour : contours) {
+        for (size_t contourNo = 0; contourNo < contours.size(); ++contourNo) {
             // reference to current contour
             std::vector<cv::Point>& contour = contours[contourNo];
 
             bool isContourTooSmall = contour.size() <= static_cast<size_t>(S);
-            if (isContourTooSmall || contour.size() <= static_cast<size_t>(normalsNo))
-            {
+            if (isContourTooSmall || contour.size() <= static_cast<size_t>(normalsNo)) {
                 continue;
             }
 
@@ -173,26 +162,23 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
                 std::copy(contour.end() - halfS, contour.end(), tempContour.begin());
                 std::copy(contour.begin(), contour.end(), tempContour.begin() + halfS);
                 std::copy(contour.begin(), contour.begin() + halfS,
-                     tempContour.begin() + contour.size() + halfS);
+                    tempContour.begin() + contour.size() + halfS);
 
                 cv::Point2f meanPoint;
 
                 //! Get part of contour
-                for (int i = 0; i < S; ++i)
-                {
+                for (int i = 0; i < S; ++i) {
                     meanPoint += tempContour[i];
                 }
                 currentContourMeanPoints.push_back(meanPoint);
 
-                for (size_t i = halfS; i < contour.size(); ++i)
-                {
+                for (size_t i = halfS; i < contour.size(); ++i) {
                     meanPoint -= tempContour[i - halfS];
                     meanPoint += tempContour[i + halfS + 1];
                     currentContourMeanPoints.push_back(meanPoint);
                 }
 
-                for (auto& currentContour : currentContourMeanPoints)
-                {
+                for (auto& currentContour : currentContourMeanPoints) {
                     currentContour *= backS;
                 }
 
@@ -210,17 +196,16 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
                 //! Extend contour by copying points from begin to end of array
                 //! and from end to begin
                 std::copy(currentContourMeanPoints.end() - 1, currentContourMeanPoints.end(),
-                          tempContourMeanPoints.begin());
+                    tempContourMeanPoints.begin());
                 std::copy(currentContourMeanPoints.begin(), currentContourMeanPoints.end(),
-                          tempContourMeanPoints.begin() + 1);
+                    tempContourMeanPoints.begin() + 1);
                 std::copy(currentContourMeanPoints.begin(), currentContourMeanPoints.begin() + 1,
-                          tempContourMeanPoints.begin() + currentContourMeanPoints.size() + 1);
+                    tempContourMeanPoints.begin() + currentContourMeanPoints.size() + 1);
 
                 cv::Point2f normalVector;
 
                 //! Calculate normals
-                for (size_t i = 0; i < tempContourMeanPoints.size() - 2; ++i)
-                {
+                for (size_t i = 0; i < tempContourMeanPoints.size() - 2; ++i) {
                     cv::Point2f vector1 = tempContourMeanPoints[i + 1] - tempContourMeanPoints[i + 0];
                     vector1 *= 1.0 / norm(vector1);
                     cv::Point2f vector2 = tempContourMeanPoints[i + 2] - tempContourMeanPoints[i + 1];
@@ -228,10 +213,8 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
                     normalVector = vector1 + vector2;
                     normalVector *= 0.5;
                     normalVector = cv::Point2f(
-                            normalVectorCoeffsMatrix[0] * normalVector.x +
-                            normalVectorCoeffsMatrix[1] * normalVector.y,
-                            normalVectorCoeffsMatrix[2] * normalVector.x +
-                            normalVectorCoeffsMatrix[3] * normalVector.y);
+                        normalVectorCoeffsMatrix[0] * normalVector.x + normalVectorCoeffsMatrix[1] * normalVector.y,
+                        normalVectorCoeffsMatrix[2] * normalVector.x + normalVectorCoeffsMatrix[3] * normalVector.y);
                     currentContourNormalVectors.push_back(normalVector);
                 }
             }
@@ -240,17 +223,12 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
             {
                 const size_t nVectorLength = 5;
                 cv::Rect imageRectangle(0, 0,
-                                        imageSelectedColorSpace.cols, imageSelectedColorSpace.rows);
-                for (size_t i = 0; i < currentContourNormalVectors.size(); ++i)
-                {
+                    imageSelectedColorSpace.cols, imageSelectedColorSpace.rows);
+                for (size_t i = 0; i < currentContourNormalVectors.size(); ++i) {
 
-                    bool isVectorsNumberSufficientlyLarge =
-                            (currentContourNormalVectors.size() > normalsNo);
-                    bool isCurrentVectorNumberProportionalDistanceBetweenNormals =
-                            ((i % (currentContourNormalVectors.size() / normalsNo)) == 0);
-                    if (isVectorsNumberSufficientlyLarge &&
-                        !isCurrentVectorNumberProportionalDistanceBetweenNormals)
-                    {
+                    bool isVectorsNumberSufficientlyLarge = (currentContourNormalVectors.size() > normalsNo);
+                    bool isCurrentVectorNumberProportionalDistanceBetweenNormals = ((i % (currentContourNormalVectors.size() / normalsNo)) == 0);
+                    if (isVectorsNumberSufficientlyLarge && !isCurrentVectorNumberProportionalDistanceBetweenNormals) {
                         continue;
                     }
 
@@ -267,38 +245,32 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
 
                         //! Calculate point colors for internal and external vectors
                         size_t j = 0;
-                        for (j = 0; j < nVectorLength; ++j)
-                        {
+                        for (j = 0; j < nVectorLength; ++j) {
 
                             //! Get external vector
-                            vectP[j] = currentContourMeanPoints[i] +
-                                       currentContourNormalVectors[i] * static_cast<float>(j + 1);
+                            vectP[j] = currentContourMeanPoints[i] + currentContourNormalVectors[i] * static_cast<float>(j + 1);
                             //! Get internal vector
-                            vectM[j] = currentContourMeanPoints[i] -
-                                       currentContourNormalVectors[i] * static_cast<float>(j + 1);
+                            vectM[j] = currentContourMeanPoints[i] - currentContourNormalVectors[i] * static_cast<float>(j + 1);
 
                             //! Test points of vector are not placed in processed image
                             bool isImageRectContainsVectP = imageRectangle.contains(vectP[j]);
                             bool isImageRectContainsVectM = imageRectangle.contains(vectM[j]);
-                            if (!isImageRectContainsVectP || !isImageRectContainsVectM)
-                            {
+                            if (!isImageRectContainsVectP || !isImageRectContainsVectM) {
                                 break;
                             }
 
                             //! Get colors in corresponding points
                             colorsP[j] = imageSelectedColorSpace.at<cv::Vec3b>(vectP[j]);
                             colorsM[j] = imageSelectedColorSpace.at<cv::Vec3b>(vectM[j]);
-
                         }
 
                         //! Store external vector for further usage
-                        if (j == nVectorLength)
-                        {
+                        if (j == nVectorLength) {
                             contourNoToNormPVectorsMap[contourNo].push_back(vectP);
                         }
                     }
 
-                    //! Obtain color medians for colors_p and 
+                    //! Obtain color medians for colors_p and
                     //! colors_m and store them to CP
                     //! for each color channel separately
 
@@ -307,8 +279,7 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
                     std::vector<float> colorChannel1P, colorChannel1M;
                     std::vector<float> colorChannel2P, colorChannel2M;
 
-                    for (size_t i = 0; i < nVectorLength; ++i)
-                    {
+                    for (size_t i = 0; i < nVectorLength; ++i) {
                         colorChannel0P.push_back(colorsP[i][0]);
                         colorChannel0M.push_back(colorsM[i][0]);
                         colorChannel1P.push_back(colorsP[i][1]);
@@ -334,9 +305,7 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
                     //! Store median to color prototypes array
                     CP.push_back(colorsPMedian);
                     CP.push_back(colorsMMedian);
-
                 }
-
             }
 
         } // for (vector<Point> &contour : contours)
@@ -351,8 +320,7 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
         //! Set default background
         binarized.setTo(255);
 
-        for (size_t contourNo = 0; contourNo < contours.size(); ++contourNo)
-        {
+        for (size_t contourNo = 0; contourNo < contours.size(); ++contourNo) {
             std::vector<cv::Point>& contour = contours[contourNo];
 
             //! Get foreground color value
@@ -360,15 +328,13 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
             {
                 int N_E = static_cast<int>(contour.size());
 
-                for (size_t pointNo = 0; pointNo < contour.size(); ++pointNo)
-                {
-                    if (!imageRectangle.contains(contour[pointNo]))
-                    {
+                for (size_t pointNo = 0; pointNo < contour.size(); ++pointNo) {
+                    if (!imageRectangle.contains(contour[pointNo])) {
                         continue;
                     }
 
                     FG += imageSelectedColorSpace.at<cv::Vec3b>(
-                            contour[pointNo])[intensityChannelNo];
+                        contour[pointNo])[intensityChannelNo];
                 }
 
                 FG /= N_E;
@@ -379,20 +345,16 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
             {
                 std::vector<float> intensityValues;
 
-                std::vector<std::vector<cv::Point2f>>& backgroundVectors =
-                        contourNoToNormPVectorsMap[contourNo];
+                std::vector<std::vector<cv::Point2f>>& backgroundVectors = contourNoToNormPVectorsMap[contourNo];
 
-                for (const auto& vector : backgroundVectors)
-                {
-                    for (const auto& vectorPoint : vector)
-                    {
+                for (const auto& vector : backgroundVectors) {
+                    for (const auto& vectorPoint : vector) {
                         intensityValues.push_back(
-                                imageSelectedColorSpace.at<cv::Vec3b>(vectorPoint)[intensityChannelNo]);
+                            imageSelectedColorSpace.at<cv::Vec3b>(vectorPoint)[intensityChannelNo]);
                     }
                 }
 
-                if (intensityValues.empty())
-                {
+                if (intensityValues.empty()) {
                     continue;
                 }
 
@@ -408,41 +370,28 @@ void prl::binarizeCOCOCLUST(cv::Mat& inputImage, cv::Mat& outputImage, const flo
                 std::vector<cv::Mat> imageChannels(imageSelectedColorSpace.channels());
                 cv::split(imageSelectedColorSpace, imageChannels);
 
-                cv::Mat imageInContourBoundingRect =
-                        imageChannels[intensityChannelNo](contourBoundingRectangle);
+                cv::Mat imageInContourBoundingRect = imageChannels[intensityChannelNo](contourBoundingRectangle);
 
                 bool isContourClockwised = (cv::contourArea(contour, true) > 0);
 
-                if (FG > BG)
-                {
-                    if (isContourClockwised)
-                    {
+                if (FG > BG) {
+                    if (isContourClockwised) {
                         imageInContourBoundingRect = 255 * (imageInContourBoundingRect >= FG);
-                    }
-                    else
-                    {
+                    } else {
                         imageInContourBoundingRect = 255 * (imageInContourBoundingRect < FG);
                     }
-                }
-                else
-                {
-                    if (!isContourClockwised)
-                    {
+                } else {
+                    if (!isContourClockwised) {
                         imageInContourBoundingRect = 255 * (imageInContourBoundingRect >= FG);
-                    }
-                    else
-                    {
+                    } else {
                         imageInContourBoundingRect = 255 * (imageInContourBoundingRect < FG);
                     }
                 }
 
                 imageInContourBoundingRect.copyTo(binarized(contourBoundingRectangle));
-
             }
-
         }
 
         outputImage = binarized.clone();
     }
 }
-

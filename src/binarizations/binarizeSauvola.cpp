@@ -28,26 +28,22 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 
-
 void prl::binarizeSauvola(
-        cv::Mat& imageInput, cv::Mat& outputImage,
-        int windowSize,
-        double thresholdCoefficient,
-        int morphIterationCount)
+    cv::Mat& imageInput, cv::Mat& outputImage,
+    int windowSize,
+    double thresholdCoefficient,
+    int morphIterationCount)
 {
-    if (imageInput.empty())
-    {
+    if (imageInput.empty()) {
         throw std::invalid_argument("Input image for binarization is empty");
     }
 
-    if (!((windowSize > 1) && ((windowSize % 2) == 1)))
-    {
+    if (!((windowSize > 1) && ((windowSize % 2) == 1))) {
         throw std::invalid_argument("Window size must satisfy the following condition: \
 			( (windowSize > 1) && ((windowSize % 2) == 1) ) ");
     }
 
-    if (imageInput.channels() != 1)
-    {
+    if (imageInput.channels() != 1) {
         cv::cvtColor(imageInput, imageInput, cv::COLOR_BGR2GRAY);
     }
 
@@ -73,8 +69,7 @@ void prl::binarizeSauvola(
     //! ... crop it and ...
     integralImage = integralImage(cv::Rect(1, 1, integralImage.cols - 1, integralImage.rows - 1));
     //! get square
-    integralImageSqr =
-            integralImageSqr(cv::Rect(1, 1, integralImageSqr.cols - 1, integralImageSqr.rows - 1));
+    integralImageSqr = integralImageSqr(cv::Rect(1, 1, integralImageSqr.cols - 1, integralImageSqr.rows - 1));
 
     //! create storage for local means
     cv::Mat localMeanValues(integralImage.size() - processingRect.size(), usedFloatType);
@@ -87,34 +82,34 @@ void prl::binarizeSauvola(
     localMeanFilterKernel.at<double>(0, w - 1) = -wSqrBack;
     //! get local means
     cv::filter2D(integralImage(processingRect), localMeanValues, usedFloatType,
-                 localMeanFilterKernel, cv::Point(-1, -1), 0.0, cv::BORDER_REFLECT);
+        localMeanFilterKernel, cv::Point(-1, -1), 0.0, cv::BORDER_REFLECT);
 
     //! create storage for local deviations
     cv::Mat localMeanValuesSqr = localMeanValues.mul(localMeanValues); // -V678
 
     //! create filter for local deviations calculation
-    //Mat localWeightedSumsFilterKernel = Mat::zeros(w, w, integralImageSqr.type());
-    //localWeightedSumsFilterKernel.at<double>(0, 0) = wSqrBack;
-    //localWeightedSumsFilterKernel.at<double>(w - 1, 0) = -wSqrBack;
-    //localWeightedSumsFilterKernel.at<double>(w - 1, w - 1) = wSqrBack;
-    //localWeightedSumsFilterKernel.at<double>(0, w - 1) = -wSqrBack;
+    // Mat localWeightedSumsFilterKernel = Mat::zeros(w, w, integralImageSqr.type());
+    // localWeightedSumsFilterKernel.at<double>(0, 0) = wSqrBack;
+    // localWeightedSumsFilterKernel.at<double>(w - 1, 0) = -wSqrBack;
+    // localWeightedSumsFilterKernel.at<double>(w - 1, w - 1) = wSqrBack;
+    // localWeightedSumsFilterKernel.at<double>(0, w - 1) = -wSqrBack;
     cv::Mat localWeightedSumsFilterKernel = localMeanFilterKernel;
 
     cv::Mat localDevianceValues;
 
     //! get local deviations
     cv::filter2D(integralImageSqr(processingRect), localDevianceValues, usedFloatType,
-             localWeightedSumsFilterKernel);
+        localWeightedSumsFilterKernel);
 
     localDevianceValues -= localMeanValuesSqr;
     cv::sqrt(localDevianceValues, localDevianceValues);
 
     //! calculate Sauvola thresholds
-    //Mat thresholdsValues = localMeanValues.mul( 1.0 + k * (localDevianceValues * RBack - 1.0) );
-    //Mat thresholdsValues = localMeanValues.mul( (k * RBack) * localDevianceValues + (1.0 - k) );
+    // Mat thresholdsValues = localMeanValues.mul( 1.0 + k * (localDevianceValues * RBack - 1.0) );
+    // Mat thresholdsValues = localMeanValues.mul( (k * RBack) * localDevianceValues + (1.0 - k) );
     localDevianceValues.convertTo(
-            localDevianceValues, localDevianceValues.type(),
-            (k * RBack), (1.0 - k));
+        localDevianceValues, localDevianceValues.type(),
+        (k * RBack), (1.0 - k));
     cv::Mat thresholdsValues = localMeanValues.mul(localDevianceValues);
     thresholdsValues.convertTo(thresholdsValues, CV_8UC1);
 
@@ -122,13 +117,10 @@ void prl::binarizeSauvola(
     outputImage = imageInput(processingRect) > thresholdsValues;
 
     //! apply morphology operation if them required
-    if (morphIterationCount > 0)
-    {
+    if (morphIterationCount > 0) {
         cv::dilate(outputImage, outputImage, cv::Mat(), cv::Point(-1, -1), morphIterationCount);
         cv::erode(outputImage, outputImage, cv::Mat(), cv::Point(-1, -1), morphIterationCount);
-    }
-    else if (morphIterationCount < 0)
-    {
+    } else if (morphIterationCount < 0) {
         cv::erode(outputImage, outputImage, cv::Mat(), cv::Point(-1, -1), -morphIterationCount);
         cv::dilate(outputImage, outputImage, cv::Mat(), cv::Point(-1, -1), -morphIterationCount);
     }

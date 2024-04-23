@@ -37,8 +37,7 @@ void prl::backgroundNormalization(const cv::Mat& inputImage, cv::Mat& outputImag
 {
     cv::Mat inputImageMat = inputImage;
 
-    if (inputImageMat.empty())
-    {
+    if (inputImageMat.empty()) {
         throw std::invalid_argument("Input image for flipping is empty");
     }
 
